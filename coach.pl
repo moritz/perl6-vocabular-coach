@@ -5,7 +5,7 @@ my $fn = 'data/words-no-de';
 
 my $file = open $fn;
 
-my @words;
+my %words;
 
 for $file.lines -> $l {
     my @lang = $l.split(/\s+ '-' \s+ /);
@@ -14,10 +14,15 @@ for $file.lines -> $l {
         next;
     }
     @lang>>.=trim;
-    @words.push: @lang[0] => @lang[1];
+    if %words.exists(@lang[1]) {
+        warn "Ignoring second translation for @lang[1]"
+             ~ "('@lang[0]' vs. '%words{@lang[1]}'";
+    } else {
+        %words{@lang[1]} = @lang[0];
+    }
 }
 
-unless @words {
+unless %words {
     die "No valid lines in data file found";
 }
 
@@ -26,17 +31,29 @@ sub normalize($x) {
             => [<aa oe ae Aa Oe Ae ae oe ue Ae Oe Ue>]);
 }
 
+my ($right, $wrong) = 0 xx *;
 loop {
-    my $pair = @words.pick;
-    my ($fl, $sl) = $pair.kv;
+    my $sl = %words.keys.pick;
+    my $fl = %words{$sl};
     my $response = prompt("(de) $sl = (no) ");
+    unless $response.defined {
+        say '';
+        say "Total: {$right + $wrong} words";
+        last unless $right + $wrong;
+        say "$right :-) or :-/";
+        say "$wrong :-(";
+        printf "%.2f%% right\n", ($right / ($right + $wrong));
+        last;
+    }
     if $response eq $fl {
         say ":-)";
+        $right++;
     } elsif normalize($response) eq normalize($fl) {
         say ":-/    $fl";
+        $right++;
     } else {
         say ":-(    $fl";
-
+        $wrong++;
     }
 }
 
