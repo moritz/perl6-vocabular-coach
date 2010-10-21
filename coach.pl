@@ -1,30 +1,49 @@
 use v6;
 
+use JSON::Tiny;
+
+sub read-dict($fn) {
+    my %words;
+    my $file = open $fn;
+    for $file.lines -> $l {
+        my @lang = $l.split(/\s+ '-' \s+ /);
+        if @lang != 2 {
+            warn "Igoring line '$l'";
+            next;
+        }
+        @lang>>.=trim;
+        if %words.exists(@lang[1]) {
+            warn "Ignoring second translation for @lang[1]"
+                ~ "('@lang[0]' vs. '%words{@lang[1]}'";
+        } else {
+            %words{@lang[1]} = @lang[0];
+        }
+    }
+
+    unless %words {
+        die "No valid lines in data file found";
+    }
+    return %words;
+}
+
+sub read-state($fn) {
+    return () unless $fn.IO.e;
+    my $contents = slurp $fn;
+    my $results  = from-json($contents);
+    return $results.hash;
+}
+
+sub save-state($fn, %state) {
+    my $file = open :w, "$fn.tmp";
+    $file.say: to-json(%state);
+    $file.close;
+    run("mv -f $fn.tmp $fn");
+}
+
 my $fn = 'data/words-no-de';
 
-
-my $file = open $fn;
-
-my %words;
-
-for $file.lines -> $l {
-    my @lang = $l.split(/\s+ '-' \s+ /);
-    if @lang != 2 {
-        warn "Igoring line '$l'";
-        next;
-    }
-    @lang>>.=trim;
-    if %words.exists(@lang[1]) {
-        warn "Ignoring second translation for @lang[1]"
-             ~ "('@lang[0]' vs. '%words{@lang[1]}'";
-    } else {
-        %words{@lang[1]} = @lang[0];
-    }
-}
-
-unless %words {
-    die "No valid lines in data file found";
-}
+my %words = read-dict($fn);
+my %state = read-state("$fn.state");
 
 sub normalize($x) {
     $x.trans([<å ø æ Å Ø Æ ä ö ü Ä Ö Ü>]
@@ -43,6 +62,12 @@ loop {
         say "$right :-) or :-/";
         say "$wrong :-(";
         printf "%.2f%% right\n", (100 * $right / ($right + $wrong));
+
+        %state<__meta__><right> += $right;
+        %state<__meta__><wrong> += $wrong;
+
+        save-state("$fn.state", %state);
+        say "hade bra!";
         last;
     }
     if $response eq $fl {
