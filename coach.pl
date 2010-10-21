@@ -42,7 +42,7 @@ loop {
         last unless $right + $wrong;
         say "$right :-) or :-/";
         say "$wrong :-(";
-        printf "%.2f%% right\n", ($right / ($right + $wrong));
+        printf "%.2f%% right\n", (100 * $right / ($right + $wrong));
         last;
     }
     if $response eq $fl {
