@@ -19,7 +19,11 @@ for $file.lines -> $l {
 
 unless @words {
     die "No valid lines in data file found";
+}
 
+sub normalize($x) {
+    $x.trans([<å ø æ Å Ø Æ ä ö ü Ä Ö Ü>]
+            => [<aa oe ae Aa Oe Ae ae oe ue Ae Oe Ue>]);
 }
 
 loop {
@@ -28,11 +32,12 @@ loop {
     my $response = prompt("(de) $sl = (no) ");
     if $response eq $fl {
         say ":-)";
+    } elsif normalize($response) eq normalize($fl) {
+        say ":-/    $fl";
     } else {
         say ":-(    $fl";
 
     }
-
 }
 
 
