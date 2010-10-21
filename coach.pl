@@ -5,7 +5,6 @@ my $fn = 'data/words-no-de';
 
 my $file = open $fn;
 
-say $file.get;
 my @words;
 
 for $file.lines -> $l {
@@ -14,7 +13,7 @@ for $file.lines -> $l {
         warn "Igoring line '$l'";
         next;
     }
-    @lang[$_].=trim for ^2;
+    @lang>>.=trim;
     @words.push: @lang[0] => @lang[1];
 }
 
