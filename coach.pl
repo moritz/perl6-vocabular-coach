@@ -71,31 +71,32 @@ loop {
         last;
     }
 
-    unless defined %state{$sl}<answers>  {
-        %state{$sl}<answers> = [];
+    if %state{$sl}<answers> -> @a {
+        my $i = 0;
+        for @a {
+            last unless $_;
+            $i++;
+        }
+        %state{$sl}<good_answers> = $i;
+        %state{$sl}.delete('answers');
     }
 
-    given %state{$sl}<answers> {
-        if $response eq $fl {
-            say ":-)";
-            $right++;
-            .push: True;
-        } elsif normalize($response) eq normalize($fl) {
-            say ":-/    $fl";
-            $right++;
-            .push: True;
-        } else {
-            say ":-(    $fl";
-            $wrong++;
-            .push: False;
-        }
-        if .elems > 5 {
-            .shift;
-            if all @($_) {
-                say ":-)))))";
-                %words.delete($sl);
-            }
-        }
+    if $response eq $fl {
+        say ":-)";
+        ++%state{$sl}<good_answers>;
+        ++$right;
+    } elsif normalize($response) eq normalize($fl) {
+        say ":-/    $fl";
+        ++$right;
+        ++%state{$sl}<good_answers>;
+    } else {
+        say ":-(    $fl";
+        ++$wrong;
+        %state{$sl}<good_answers> = 0;
+    }
+    if %state{$sl}<good_answers> > 3 {
+        say ':-)))))';
+        %words.delete($sl);
     }
 }
 
