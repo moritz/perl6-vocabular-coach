@@ -44,6 +44,25 @@ my $fn = 'data/words-no-de';
 
 my %words = read-dict($fn);
 my %state = read-state("$fn.state");
+my %p;
+
+sub propability_for_count($c) {
+    $c > 4 ?? 1 / $c !! 5 - $c;
+}
+
+for %words.keys -> $k {
+    if %state{$k}<answers> -> @a {
+        my $i = 0;
+        for @a {
+            last unless $_;
+            $i++;
+        }
+        %state{$k}<good_answers> = $i;
+        %state{$k}.delete('answers');
+    }
+
+    %p{$k} = propability_for_count %state{$k}<good_answers> // 0;
+}
 
 sub normalize($x) {
     $x.trans([<å ø æ Å Ø Æ ä ö ü Ä Ö Ü>]
@@ -52,10 +71,12 @@ sub normalize($x) {
 
 my ($right, $wrong) = 0 xx *;
 loop {
-    my $sl = %words.keys.pick;
+    my $sl = %p.pick;
     my $fl = %words{$sl};
     my $response = prompt("(de) $sl = (no) ");
+
     unless $response.defined {
+        # End of input
         say '';
         say "Total: {$right + $wrong} words";
         last unless $right + $wrong;
@@ -71,17 +92,8 @@ loop {
         last;
     }
 
-    if %state{$sl}<answers> -> @a {
-        my $i = 0;
-        for @a {
-            last unless $_;
-            $i++;
-        }
-        %state{$sl}<good_answers> = $i;
-        %state{$sl}.delete('answers');
-    }
 
-    if $response eq $fl {
+    if $response eq $fl || $response.subst(/^aa\s+/, '') eq $fl.subst(/^å\s+/, '') {
         say ":-)";
         ++%state{$sl}<good_answers>;
         ++$right;
@@ -94,10 +106,10 @@ loop {
         ++$wrong;
         %state{$sl}<good_answers> = 0;
     }
-    if %state{$sl}<good_answers> > 3 {
+    if %state{$sl}<good_answers> > 4 {
         say ':-)))))';
-        %words.delete($sl);
     }
+    %p{$sl} = propability_for_count %state{$sl}<good_answers>;
 }
 
 
