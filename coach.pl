@@ -30,7 +30,7 @@ sub read-state($fn) {
     return () unless $fn.IO.e;
     my $contents = slurp $fn;
     my $results  = from-json($contents);
-    return $results.hash;
+    return $results;
 }
 
 sub save-state($fn, %state) {
@@ -70,15 +70,32 @@ loop {
         say "hade bra!";
         last;
     }
-    if $response eq $fl {
-        say ":-)";
-        $right++;
-    } elsif normalize($response) eq normalize($fl) {
-        say ":-/    $fl";
-        $right++;
-    } else {
-        say ":-(    $fl";
-        $wrong++;
+
+    unless defined %state{$sl}<answers>  {
+        %state{$sl}<answers> = [];
+    }
+
+    given %state{$sl}<answers> {
+        if $response eq $fl {
+            say ":-)";
+            $right++;
+            .push: True;
+        } elsif normalize($response) eq normalize($fl) {
+            say ":-/    $fl";
+            $right++;
+            .push: True;
+        } else {
+            say ":-(    $fl";
+            $wrong++;
+            .push: False;
+        }
+        if .elems > 5 {
+            .pop;
+            if all @($_) {
+                say "removing entry due to sound knowledge";
+                %words.delete($sl);
+            }
+        }
     }
 }
 
