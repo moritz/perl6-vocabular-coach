@@ -90,7 +90,7 @@ loop {
             .push: False;
         }
         if .elems > 5 {
-            .pop;
+            .shift;
             if all @($_) {
                 say "removing entry due to sound knowledge";
                 %words.delete($sl);
